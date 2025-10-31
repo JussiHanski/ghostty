@@ -106,10 +106,17 @@ main() {
         if command -v ghostty &> /dev/null; then
             echo "Version: $(ghostty --version 2>&1 || echo 'version unknown')"
         fi
-        read -p "Reinstall/update? (y/N) " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Skipping installation."
+
+        # Only prompt if running interactively
+        if [ -t 0 ]; then
+            read -p "Reinstall/update? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "Skipping installation."
+                return 0
+            fi
+        else
+            echo "Non-interactive mode: Skipping installation."
             return 0
         fi
     fi
