@@ -177,12 +177,39 @@ deploy_config() {
         mkdir -p "$CONFIG_DIR/themes"
         cp -r "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
 
+        # Copy welcome image
+        if [ -f "$INSTALL_DIR/config/wizard.jpeg" ]; then
+            cp "$INSTALL_DIR/config/wizard.jpeg" "$CONFIG_DIR/"
+        fi
+
+        # Copy welcome script
+        mkdir -p "$HOME/.local/bin"
+        if [ -f "$INSTALL_DIR/scripts/show-welcome.sh" ]; then
+            cp "$INSTALL_DIR/scripts/show-welcome.sh" "$HOME/.local/bin/"
+            chmod +x "$HOME/.local/bin/show-welcome.sh"
+        fi
+
+        # Add welcome script to .bashrc if not already present
+        if [ -f "$HOME/.bashrc" ]; then
+            if ! grep -q "show-welcome.sh" "$HOME/.bashrc"; then
+                echo "" >> "$HOME/.bashrc"
+                echo "# Ghostty welcome message" >> "$HOME/.bashrc"
+                echo 'if [ -n "$GHOSTTY_RESOURCES_DIR" ] && [ -f "$HOME/.local/bin/show-welcome.sh" ]; then' >> "$HOME/.bashrc"
+                echo '    "$HOME/.local/bin/show-welcome.sh"' >> "$HOME/.bashrc"
+                echo 'fi' >> "$HOME/.bashrc"
+                log_success "Added welcome message to .bashrc"
+            fi
+        fi
+
         log_success "Configuration deployed to $CONFIG_DIR"
     else
         log_info "Would deploy config to $CONFIG_DIR"
         log_info "  - config"
         log_info "  - keybindings.conf"
         log_info "  - themes/"
+        log_info "  - wizard.jpeg"
+        log_info "  - show-welcome.sh -> ~/.local/bin/"
+        log_info "  - Add welcome to .bashrc"
     fi
 }
 
