@@ -13,7 +13,7 @@ window-decoration = true
 window-theme = auto
 
 # Theme
-theme = themes/catppuccin-mocha
+theme = catppuccin-mocha
 
 # Shell
 shell-integration = detect
