@@ -11,6 +11,8 @@ window-padding-x = 10
 window-padding-y = 10
 window-decoration = true
 window-theme = auto
+background-opacity = 0.95
+background-blur-radius = 20
 
 # Theme
 theme = catppuccin-mocha
