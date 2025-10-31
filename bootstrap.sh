@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ghostty Bootstrap Script
-# One-liner: curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/main/bootstrap.sh | bash
+# One-liner: curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/refs/heads/main/bootstrap.sh | bash
 
 set -e
 

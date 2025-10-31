@@ -18,7 +18,7 @@ Automated installation and configuration management for [Ghostty](https://ghostt
 ### One-liner Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/refs/heads/main/bootstrap.sh | bash
 ```
 
 ### Manual Installation
@@ -203,7 +203,7 @@ cp -r ~/.config/ghostty/backups/backup_20241031_123456/* ~/.config/ghostty/
 To update Ghostty and/or the configuration, simply re-run the bootstrap script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/main/bootstrap.sh | bash
+curl -fsSL https://raw.githubusercontent.com/JussiHanski/ghostty/refs/heads/main/bootstrap.sh | bash
 ```
 
 Or if you have the repo cloned:
