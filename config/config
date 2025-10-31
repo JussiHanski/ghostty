@@ -1,0 +1,38 @@
+# Ghostty Configuration
+# Documentation: https://ghostty.org/docs
+
+# Font Configuration
+font-family = "JetBrains Mono"
+font-size = 12
+font-thicken = true
+
+# Window Configuration
+window-padding-x = 10
+window-padding-y = 10
+window-decoration = true
+window-theme = auto
+
+# Theme
+theme = dark:catppuccin-mocha,light:catppuccin-latte
+
+# Shell
+shell-integration = true
+shell-integration-features = cursor,sudo,title
+
+# Cursor
+cursor-style = block
+cursor-style-blink = true
+
+# Mouse
+mouse-hide-while-typing = true
+clipboard-read = allow
+clipboard-write = allow
+
+# Performance
+unfocused-split-fill = color:background
+
+# Keybindings (import from separate file)
+config-file = keybindings.conf
+
+# Miscellaneous
+quit-after-last-window-closed = true
