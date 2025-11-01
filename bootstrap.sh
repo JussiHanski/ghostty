@@ -101,18 +101,32 @@ parse_args() {
 detect_platform() {
     case "$(uname -s)" in
         Linux*)
-            PLATFORM="linux"
+            # Check if running in WSL
+            if [ -f "${INSTALL_DIR}/scripts/detect-wsl.sh" ]; then
+                source "${INSTALL_DIR}/scripts/detect-wsl.sh"
+                if [ "$IS_WSL" = "true" ]; then
+                    PLATFORM="wsl"
+                    log_info "Detected platform: WSL (Windows Subsystem for Linux)"
+                    log_info "  WSL Version: $WSL_VERSION"
+                    [ "$HAS_WSLG" = "true" ] && log_info "  WSLg: Available (GUI support enabled)"
+                else
+                    PLATFORM="linux"
+                    log_info "Detected platform: Linux"
+                fi
+            else
+                PLATFORM="linux"
+                log_info "Detected platform: Linux"
+            fi
             ;;
         Darwin*)
             PLATFORM="macos"
+            log_info "Detected platform: macOS"
             ;;
         *)
             log_error "Unsupported operating system: $(uname -s)"
             exit 1
             ;;
     esac
-
-    log_info "Detected platform: $PLATFORM"
 }
 
 clone_or_update_repo() {
@@ -197,6 +211,8 @@ deploy_config() {
         # Add welcome script to shell profile (platform-specific)
         if [ "$PLATFORM" = "macos" ]; then
             SHELL_PROFILE="$HOME/.zprofile"
+        elif [ "$PLATFORM" = "wsl" ] || [ "$PLATFORM" = "linux" ]; then
+            SHELL_PROFILE="$HOME/.bashrc"
         else
             SHELL_PROFILE="$HOME/.bashrc"
         fi
@@ -229,6 +245,8 @@ deploy_config() {
         log_info "  - show-welcome.sh -> ~/.local/bin/"
         if [ "$PLATFORM" = "macos" ]; then
             log_info "  - Add welcome to .zprofile"
+        elif [ "$PLATFORM" = "wsl" ]; then
+            log_info "  - Add welcome to .bashrc (WSL)"
         else
             log_info "  - Add welcome to .bashrc"
         fi
@@ -453,12 +471,27 @@ print_next_steps() {
     echo "Next steps:"
     echo "  1. Restart your terminal or run: source ~/$SHELL_PROFILE_NAME"
     echo "  2. Launch Ghostty"
+
+    if [ "$PLATFORM" = "wsl" ]; then
+        echo "     - From WSL terminal: ghostty"
+        echo "     - From Windows Start Menu: Search for 'Ghostty'"
+    fi
+
     echo "  3. Customize your config at: $CONFIG_DIR/config"
     echo
     echo "Configuration locations:"
     echo "  - Main config: $CONFIG_DIR/config"
     echo "  - Keybindings: $CONFIG_DIR/keybindings.conf"
     echo "  - Themes: $CONFIG_DIR/themes/"
+
+    if [ "$PLATFORM" = "wsl" ]; then
+        echo
+        echo "WSL Notes:"
+        echo "  - Ghostty will open as a Windows GUI application"
+        echo "  - Requires WSL2 with WSLg for best experience"
+        echo "  - WSL support is experimental (official support coming)"
+    fi
+
     echo
     echo "To update in the future, run this script again!"
 }

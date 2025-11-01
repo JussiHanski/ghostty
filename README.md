@@ -1,17 +1,19 @@
 # Ghostty Configuration & Auto-Installer
 
-Automated installation and configuration management for [Ghostty](https://ghostty.org) terminal emulator across Linux and macOS environments.
+Automated installation and configuration management for [Ghostty](https://ghostty.org) terminal emulator across Linux, macOS, and WSL environments.
 
 ## Features
 
 - 🚀 **One-line installation** via curl
 - 🐧 **Multi-distro Linux support** (Ubuntu, Debian, Fedora, Arch)
 - 🍎 **macOS support** (Homebrew or build from source)
+- 🪟 **WSL support** (Windows Subsystem for Linux with WSLg)
 - 🎨 **Pre-configured themes** (Catppuccin Mocha/Latte)
 - ⌨️ **Sensible keybindings** out of the box
 - 💾 **Automatic backups** of existing configs
 - 🔄 **Idempotent** - safe to run multiple times
 - 🛡️ **Dry-run mode** for testing
+- 🗑️ **Complete uninstall** - tracks and removes only script-installed components
 
 ## Quick Start
 
@@ -138,6 +140,7 @@ Changes take effect immediately - just open a new Ghostty window/tab.
 - GTK4, libadwaita
 - Zig compiler
 - Pandoc
+- chafa (for welcome image)
 
 ### macOS
 
@@ -153,6 +156,44 @@ Changes take effect immediately - just open a new Ghostty window/tab.
 **Requirements:**
 - Homebrew (will be installed if missing)
 - Xcode Command Line Tools
+
+### WSL (Windows Subsystem for Linux)
+
+**Requirements:**
+- **WSL2** (required)
+- **WSLg** (GUI support) - included in Windows 11 or Windows 10 Build 19044+
+- Ubuntu, Debian, Fedora, or Arch distribution
+
+**Installation method:**
+- Automatically detects WSL environment
+- Validates WSL2 and WSLg requirements
+- Builds from source (same as Linux)
+- Integrates with Windows Start Menu
+
+**Features:**
+- Opens as native Windows GUI application
+- Appears in Windows Start Menu
+- Can launch from WSL terminal or Windows GUI
+- Full desktop integration via WSLg
+
+**Important Notes:**
+- WSL support is **experimental** (official Windows support on roadmap)
+- Requires `wsl --update` to ensure WSLg is available
+- Some rendering/performance issues may occur
+
+**Check your WSL version:**
+```bash
+wsl --version  # In PowerShell/CMD
+```
+
+**Upgrade to WSL2 if needed:**
+```powershell
+# In PowerShell as Administrator
+wsl --set-version Ubuntu 2  # Replace 'Ubuntu' with your distro name
+wsl --update
+wsl --shutdown
+# Restart WSL and run the installer
+```
 
 ## Repository Structure
 
