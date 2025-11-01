@@ -99,12 +99,29 @@ install_from_source() {
     echo "Ghostty installed successfully!"
 }
 
+ensure_dependencies() {
+    # Always ensure chafa is installed (needed for welcome image)
+    if ! command -v chafa &> /dev/null; then
+        echo "Installing chafa for terminal graphics..."
+        if command -v brew &> /dev/null; then
+            brew install chafa
+        else
+            echo "Warning: Homebrew not found. Cannot install chafa."
+            echo "Install it manually: brew install chafa"
+        fi
+    fi
+}
+
 # Main installation flow
 main() {
     echo "=== Ghostty macOS Installation ==="
     echo "OS: $OS"
     echo "Architecture: $ARCH"
     echo
+
+    # Always ensure dependencies are installed
+    check_homebrew
+    ensure_dependencies
 
     # Check if Ghostty is already installed
     if command -v ghostty &> /dev/null || [ -d "/Applications/Ghostty.app" ]; then
@@ -118,16 +135,14 @@ main() {
             read -p "Reinstall/update? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                echo "Skipping installation."
+                echo "Skipping Ghostty installation."
                 return 0
             fi
         else
-            echo "Non-interactive mode: Skipping installation."
+            echo "Non-interactive mode: Skipping Ghostty installation."
             return 0
         fi
     fi
-
-    check_homebrew
 
     # Prefer Homebrew installation
     echo

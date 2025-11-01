@@ -114,6 +114,28 @@ install_ghostty() {
     echo "Ghostty installed successfully!"
 }
 
+ensure_dependencies() {
+    # Always ensure chafa is installed (needed for welcome image)
+    if ! command -v chafa &> /dev/null; then
+        echo "Installing chafa for terminal graphics..."
+        case "$DISTRO" in
+            ubuntu|debian|pop)
+                sudo apt-get install -y chafa
+                ;;
+            fedora)
+                sudo dnf install -y chafa
+                ;;
+            arch|manjaro)
+                sudo pacman -S --needed --noconfirm chafa
+                ;;
+            *)
+                echo "Warning: Unknown distribution. Cannot auto-install chafa."
+                echo "Please install it manually for the welcome image to display."
+                ;;
+        esac
+    fi
+}
+
 # Main installation flow
 main() {
     echo "=== Ghostty Linux Installation ==="
@@ -121,6 +143,9 @@ main() {
     echo "Distribution: $DISTRO"
     echo "Architecture: $ARCH"
     echo
+
+    # Always ensure chafa is installed
+    ensure_dependencies
 
     # Check if Ghostty is already installed
     if command -v ghostty &> /dev/null; then
@@ -131,11 +156,11 @@ main() {
             read -p "Reinstall/update? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                echo "Skipping installation."
+                echo "Skipping Ghostty installation."
                 return 0
             fi
         else
-            echo "Non-interactive mode: Skipping installation."
+            echo "Non-interactive mode: Skipping Ghostty installation."
             return 0
         fi
     fi
