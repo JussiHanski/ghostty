@@ -2,7 +2,7 @@
 
 # Display welcome wizard in Ghostty terminal
 
-WIZARD_IMAGE="${HOME}/.config/ghostty/wizard.jpeg"
+WIZARD_IMAGE="${HOME}/.config/ghostty/wizard.png"
 
 if [ -f "$WIZARD_IMAGE" ]; then
     # Display using kitty graphics protocol for crisp image rendering

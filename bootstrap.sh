@@ -178,8 +178,8 @@ deploy_config() {
         cp -r "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
 
         # Copy welcome image
-        if [ -f "$INSTALL_DIR/config/wizard.jpeg" ]; then
-            cp "$INSTALL_DIR/config/wizard.jpeg" "$CONFIG_DIR/"
+        if [ -f "$INSTALL_DIR/config/wizard.png" ]; then
+            cp "$INSTALL_DIR/config/wizard.png" "$CONFIG_DIR/"
         fi
 
         # Copy welcome script
@@ -207,7 +207,7 @@ deploy_config() {
         log_info "  - config"
         log_info "  - keybindings.conf"
         log_info "  - themes/"
-        log_info "  - wizard.jpeg"
+        log_info "  - wizard.png"
         log_info "  - show-welcome.sh -> ~/.local/bin/"
         log_info "  - Add welcome to .bashrc"
     fi
