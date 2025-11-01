@@ -17,11 +17,6 @@ REPO_URL="https://github.com/JussiHanski/ghostty.git"
 INSTALL_DIR="${HOME}/.ghostty-config"
 CONFIG_DIR="${HOME}/.config/ghostty"
 
-# Source install log functions
-if [ -f "${INSTALL_DIR}/scripts/install-log.sh" ]; then
-    source "${INSTALL_DIR}/scripts/install-log.sh"
-fi
-
 # Flags
 DRY_RUN=false
 VERBOSE=false
@@ -134,6 +129,11 @@ clone_or_update_repo() {
         fi
     fi
     log_success "Repository ready at $INSTALL_DIR"
+
+    # Source install log functions after repo is available
+    if [ -f "${INSTALL_DIR}/scripts/install-log.sh" ]; then
+        source "${INSTALL_DIR}/scripts/install-log.sh"
+    fi
 }
 
 run_installer() {
@@ -204,8 +204,10 @@ deploy_config() {
         # Create shell profile if it doesn't exist
         touch "$SHELL_PROFILE"
 
-        # Log shell profile
-        log_install "SHELL_PROFILE" "$SHELL_PROFILE"
+        # Log shell profile (only if function is available)
+        if type log_install &>/dev/null; then
+            log_install "SHELL_PROFILE" "$SHELL_PROFILE"
+        fi
 
         # Add welcome script if not already present
         if ! grep -q "show-welcome.sh" "$SHELL_PROFILE"; then

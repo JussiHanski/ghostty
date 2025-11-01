@@ -15,6 +15,9 @@ check_homebrew() {
         read -p "Install Homebrew? (y/N) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # Set environment variables to suppress Homebrew hints
+            export HOMEBREW_NO_INSTALL_CLEANUP=1
+            export HOMEBREW_NO_ENV_HINTS=1
             install_homebrew
             log_install "HOMEBREW_INSTALLED_BY_SCRIPT" "true"
         else
@@ -152,6 +155,10 @@ main() {
     echo "OS: $OS"
     echo "Architecture: $ARCH"
     echo
+
+    # Suppress Homebrew hints and cleanup messages
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+    export HOMEBREW_NO_ENV_HINTS=1
 
     # Initialize install log
     init_install_log
