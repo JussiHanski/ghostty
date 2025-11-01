@@ -15,19 +15,19 @@ install_dependencies() {
         ubuntu|debian|pop)
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc
+                libadwaita-1-dev pkg-config pandoc chafa
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
-                libadwaita-devel pkgconfig pandoc
+                libadwaita-devel pkgconfig pandoc chafa
             ;;
         arch|manjaro)
             sudo pacman -Sy --needed --noconfirm git base-devel gtk4 \
-                libadwaita pkgconf pandoc
+                libadwaita pkgconf pandoc chafa
             ;;
         *)
             echo "Warning: Unknown distribution. You may need to install dependencies manually."
-            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc"
+            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, chafa"
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then

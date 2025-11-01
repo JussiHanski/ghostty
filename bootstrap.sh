@@ -189,16 +189,24 @@ deploy_config() {
             chmod +x "$HOME/.local/bin/show-welcome.sh"
         fi
 
-        # Add welcome script to .bashrc if not already present
-        if [ -f "$HOME/.bashrc" ]; then
-            if ! grep -q "show-welcome.sh" "$HOME/.bashrc"; then
-                echo "" >> "$HOME/.bashrc"
-                echo "# Ghostty welcome message" >> "$HOME/.bashrc"
-                echo 'if [ -n "$GHOSTTY_RESOURCES_DIR" ] && [ -f "$HOME/.local/bin/show-welcome.sh" ]; then' >> "$HOME/.bashrc"
-                echo '    "$HOME/.local/bin/show-welcome.sh"' >> "$HOME/.bashrc"
-                echo 'fi' >> "$HOME/.bashrc"
-                log_success "Added welcome message to .bashrc"
-            fi
+        # Add welcome script to shell profile (platform-specific)
+        if [ "$PLATFORM" = "macos" ]; then
+            SHELL_PROFILE="$HOME/.zprofile"
+        else
+            SHELL_PROFILE="$HOME/.bashrc"
+        fi
+
+        # Create shell profile if it doesn't exist
+        touch "$SHELL_PROFILE"
+
+        # Add welcome script if not already present
+        if ! grep -q "show-welcome.sh" "$SHELL_PROFILE"; then
+            echo "" >> "$SHELL_PROFILE"
+            echo "# Ghostty welcome message" >> "$SHELL_PROFILE"
+            echo 'if [ -n "$GHOSTTY_RESOURCES_DIR" ] && [ -f "$HOME/.local/bin/show-welcome.sh" ]; then' >> "$SHELL_PROFILE"
+            echo '    "$HOME/.local/bin/show-welcome.sh"' >> "$SHELL_PROFILE"
+            echo 'fi' >> "$SHELL_PROFILE"
+            log_success "Added welcome message to $(basename $SHELL_PROFILE)"
         fi
 
         log_success "Configuration deployed to $CONFIG_DIR"
@@ -209,7 +217,11 @@ deploy_config() {
         log_info "  - themes/"
         log_info "  - wizard.png"
         log_info "  - show-welcome.sh -> ~/.local/bin/"
-        log_info "  - Add welcome to .bashrc"
+        if [ "$PLATFORM" = "macos" ]; then
+            log_info "  - Add welcome to .zprofile"
+        else
+            log_info "  - Add welcome to .bashrc"
+        fi
     fi
 }
 
@@ -266,8 +278,16 @@ print_next_steps() {
     echo
     log_success "Installation complete!"
     echo
+
+    # Platform-specific shell profile
+    if [ "$PLATFORM" = "macos" ]; then
+        SHELL_PROFILE_NAME=".zprofile"
+    else
+        SHELL_PROFILE_NAME=".bashrc"
+    fi
+
     echo "Next steps:"
-    echo "  1. Restart your terminal or run: source ~/.bashrc (Linux) or source ~/.zprofile (macOS)"
+    echo "  1. Restart your terminal or run: source ~/$SHELL_PROFILE_NAME"
     echo "  2. Launch Ghostty"
     echo "  3. Customize your config at: $CONFIG_DIR/config"
     echo

@@ -55,6 +55,12 @@ install_ghostty_homebrew() {
         brew install ghostty
     fi
 
+    # Install chafa for welcome image display
+    if ! command -v chafa &> /dev/null; then
+        echo "Installing chafa for terminal graphics..."
+        brew install chafa
+    fi
+
     echo "Ghostty installed via Homebrew!"
 }
 
@@ -63,7 +69,7 @@ install_from_source() {
 
     # Install dependencies
     echo "Installing build dependencies..."
-    brew install git zig pandoc
+    brew install git zig pandoc chafa
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
 
