@@ -17,6 +17,11 @@ REPO_URL="https://github.com/JussiHanski/ghostty.git"
 INSTALL_DIR="${HOME}/.ghostty-config"
 CONFIG_DIR="${HOME}/.config/ghostty"
 
+# Source install log functions
+if [ -f "${INSTALL_DIR}/scripts/install-log.sh" ]; then
+    source "${INSTALL_DIR}/scripts/install-log.sh"
+fi
+
 # Flags
 DRY_RUN=false
 VERBOSE=false
@@ -199,6 +204,9 @@ deploy_config() {
         # Create shell profile if it doesn't exist
         touch "$SHELL_PROFILE"
 
+        # Log shell profile
+        log_install "SHELL_PROFILE" "$SHELL_PROFILE"
+
         # Add welcome script if not already present
         if ! grep -q "show-welcome.sh" "$SHELL_PROFILE"; then
             echo "" >> "$SHELL_PROFILE"
@@ -247,8 +255,43 @@ verify_installation() {
 }
 
 uninstall_config() {
-    log_warning "This will remove Ghostty configuration (binary will remain)"
-    read -p "Continue? (y/N) " -n 1 -r
+    local INSTALL_LOG="${CONFIG_DIR}/.install_log"
+
+    echo
+    log_warning "=== Ghostty Complete Uninstall ==="
+    echo
+    echo "This will remove:"
+    echo "  - Ghostty configuration"
+    echo "  - Components installed by this script (based on install log)"
+    echo "  - Shell profile modifications"
+    echo
+
+    if [ -f "$INSTALL_LOG" ]; then
+        echo "Install log found. The following will be checked for removal:"
+
+        # Source the log functions if not already loaded
+        if [ -f "${INSTALL_DIR}/scripts/install-log.sh" ]; then
+            source "${INSTALL_DIR}/scripts/install-log.sh"
+        fi
+
+        local platform=$(read_install_log "PLATFORM")
+        local ghostty_installed=$(read_install_log "GHOSTTY_INSTALLED_BY_SCRIPT")
+        local ghostty_method=$(read_install_log "GHOSTTY_INSTALL_METHOD")
+        local chafa_installed=$(read_install_log "CHAFA_INSTALLED_BY_SCRIPT")
+        local homebrew_installed=$(read_install_log "HOMEBREW_INSTALLED_BY_SCRIPT")
+        local zig_installed=$(read_install_log "ZIG_INSTALLED_BY_SCRIPT")
+
+        echo "  - Platform: ${platform}"
+        [ "$ghostty_installed" = "true" ] && echo "  - Ghostty (installed via ${ghostty_method})"
+        [ "$chafa_installed" = "true" ] && echo "  - Chafa"
+        [ "$homebrew_installed" = "true" ] && echo "  - Homebrew"
+        [ "$zig_installed" = "true" ] && echo "  - Zig compiler"
+        echo
+    else
+        log_warning "No install log found. Only configuration will be removed."
+    fi
+
+    read -p "Continue with uninstall? (y/N) " -n 1 -r
     echo
 
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -256,22 +299,141 @@ uninstall_config() {
         return 0
     fi
 
+    # Backup configuration before removal
     if [ -d "$CONFIG_DIR" ]; then
         log_info "Backing up configuration before removal..."
         cd "$INSTALL_DIR" 2>/dev/null || true
         source scripts/backup-config.sh 2>/dev/null || true
         backup_config 2>/dev/null || true
+    fi
 
+    # Remove based on install log
+    if [ -f "$INSTALL_LOG" ]; then
+        source "${INSTALL_DIR}/scripts/install-log.sh"
+
+        local platform=$(read_install_log "PLATFORM")
+        local ghostty_installed=$(read_install_log "GHOSTTY_INSTALLED_BY_SCRIPT")
+        local ghostty_method=$(read_install_log "GHOSTTY_INSTALL_METHOD")
+        local ghostty_binary=$(read_install_log "GHOSTTY_BINARY_PATH")
+        local chafa_installed=$(read_install_log "CHAFA_INSTALLED_BY_SCRIPT")
+        local homebrew_installed=$(read_install_log "HOMEBREW_INSTALLED_BY_SCRIPT")
+        local zig_installed=$(read_install_log "ZIG_INSTALLED_BY_SCRIPT")
+        local shell_profile=$(read_install_log "SHELL_PROFILE")
+
+        # Remove Ghostty if we installed it
+        if [ "$ghostty_installed" = "true" ]; then
+            log_info "Removing Ghostty..."
+
+            if [ "$platform" = "macos" ]; then
+                if [ "$ghostty_method" = "homebrew" ]; then
+                    if command -v brew &> /dev/null; then
+                        brew uninstall ghostty 2>/dev/null || true
+                        brew untap ghostty-org/ghostty 2>/dev/null || true
+                    fi
+                elif [ "$ghostty_method" = "source" ]; then
+                    rm -rf "/Applications/Ghostty.app"
+                    rm -rf "${HOME}/.local/src/ghostty"
+                fi
+            else
+                # Linux
+                rm -f "${HOME}/.local/bin/ghostty"
+                rm -f "${HOME}/.local/share/applications/ghostty.desktop"
+                rm -rf "${HOME}/.local/src/ghostty"
+            fi
+
+            log_success "Ghostty removed"
+        fi
+
+        # Remove chafa if we installed it
+        if [ "$chafa_installed" = "true" ]; then
+            log_info "Removing chafa..."
+
+            if [ "$platform" = "macos" ]; then
+                if command -v brew &> /dev/null; then
+                    brew uninstall chafa 2>/dev/null || true
+                fi
+            else
+                # Linux - note this requires manual intervention as we don't want to force uninstall
+                log_warning "Chafa was installed. You may want to remove it manually:"
+                log_info "  Ubuntu/Debian: sudo apt-get remove chafa"
+                log_info "  Fedora: sudo dnf remove chafa"
+                log_info "  Arch: sudo pacman -R chafa"
+            fi
+
+            log_success "Chafa removal complete"
+        fi
+
+        # Remove Zig if we installed it (Linux only)
+        if [ "$zig_installed" = "true" ]; then
+            log_info "Removing Zig compiler..."
+            rm -rf "${HOME}/.local/zig"
+            log_success "Zig removed"
+        fi
+
+        # Remove Homebrew if we installed it
+        if [ "$homebrew_installed" = "true" ]; then
+            log_warning "Homebrew was installed by this script."
+            read -p "Remove Homebrew? This may affect other applications. (y/N) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Removing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+                log_success "Homebrew removed"
+            fi
+        fi
+
+        # Remove shell profile modifications
+        if [ -n "$shell_profile" ] && [ -f "$shell_profile" ]; then
+            log_info "Removing shell profile modifications..."
+
+            # Remove Ghostty welcome message section
+            sed -i.ghostty-backup '/# Ghostty welcome message/,/^fi$/d' "$shell_profile" 2>/dev/null || \
+                sed -i '.ghostty-backup' '/# Ghostty welcome message/,/^fi$/d' "$shell_profile"
+
+            # Remove Zig PATH (Linux)
+            if [ "$platform" = "linux" ]; then
+                sed -i.ghostty-backup '/export PATH="\$HOME\/.local\/zig:\$PATH"/d' "$shell_profile" 2>/dev/null || \
+                    sed -i '.ghostty-backup' '/export PATH="\$HOME\/.local\/zig:\$PATH"/d' "$shell_profile"
+                sed -i.ghostty-backup '/export PATH="\$HOME\/.local\/bin:\$PATH"/d' "$shell_profile" 2>/dev/null || \
+                    sed -i '.ghostty-backup' '/export PATH="\$HOME\/.local\/bin:\$PATH"/d' "$shell_profile"
+            fi
+
+            # Remove Homebrew PATH (macOS)
+            if [ "$platform" = "macos" ]; then
+                sed -i.ghostty-backup '/eval "\$(.\/opt\/homebrew\/bin\/brew shellenv)"/d' "$shell_profile" 2>/dev/null || \
+                    sed -i '.ghostty-backup' '/eval "\$(.\/opt\/homebrew\/bin\/brew shellenv)"/d' "$shell_profile"
+            fi
+
+            rm -f "${shell_profile}.ghostty-backup"
+            log_success "Shell profile cleaned"
+        fi
+    fi
+
+    # Remove welcome script
+    if [ -f "${HOME}/.local/bin/show-welcome.sh" ]; then
+        rm -f "${HOME}/.local/bin/show-welcome.sh"
+        log_success "Welcome script removed"
+    fi
+
+    # Remove configuration directory
+    if [ -d "$CONFIG_DIR" ]; then
         rm -rf "$CONFIG_DIR"
         log_success "Configuration removed from $CONFIG_DIR"
     fi
 
+    # Remove repository
     if [ -d "$INSTALL_DIR" ]; then
         rm -rf "$INSTALL_DIR"
         log_success "Repository removed from $INSTALL_DIR"
     fi
 
-    log_success "Uninstall complete"
+    echo
+    log_success "Uninstall complete!"
+    echo
+    echo "You may want to:"
+    echo "  1. Restart your shell or run: source ~/"$(basename ${shell_profile:-".bashrc"})
+    echo "  2. Check for any remaining files in ~/.local/bin or ~/.local/src"
+    echo "  3. Review your shell profile for any remaining modifications"
 }
 
 print_next_steps() {

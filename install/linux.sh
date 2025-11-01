@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/scripts/detect-platform.sh"
+source "${SCRIPT_DIR}/scripts/install-log.sh"
 
 install_dependencies() {
     echo "Installing build dependencies for $DISTRO..."
@@ -43,6 +44,7 @@ check_zig() {
         install_zig
     else
         echo "Zig is already installed: $(zig version)"
+        log_install "ZIG_INSTALLED_BY_SCRIPT" "false"
     fi
 }
 
@@ -67,6 +69,7 @@ install_zig() {
         export PATH="${INSTALL_DIR}:$PATH"
     fi
 
+    log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
     echo "Zig installed successfully!"
 }
 
@@ -80,11 +83,13 @@ install_ghostty() {
         echo "Ghostty source found. Updating..."
         cd "$BUILD_DIR"
         git pull
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
     else
         echo "Cloning Ghostty repository..."
         mkdir -p "${HOME}/.local/src"
         git clone https://github.com/ghostty-org/ghostty.git "$BUILD_DIR"
         cd "$BUILD_DIR"
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
     fi
 
     # Build
@@ -95,6 +100,9 @@ install_ghostty() {
     echo "Installing Ghostty..."
     mkdir -p "${HOME}/.local/bin"
     cp "zig-out/bin/ghostty" "${HOME}/.local/bin/"
+
+    log_install "GHOSTTY_INSTALL_METHOD" "source"
+    log_install "GHOSTTY_BINARY_PATH" "${HOME}/.local/bin/ghostty"
 
     # Install desktop file
     mkdir -p "${HOME}/.local/share/applications"
@@ -121,18 +129,27 @@ ensure_dependencies() {
         case "$DISTRO" in
             ubuntu|debian|pop)
                 sudo apt-get install -y chafa
+                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
                 ;;
             fedora)
                 sudo dnf install -y chafa
+                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
                 ;;
             arch|manjaro)
                 sudo pacman -S --needed --noconfirm chafa
+                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
                 ;;
             *)
                 echo "Warning: Unknown distribution. Cannot auto-install chafa."
                 echo "Please install it manually for the welcome image to display."
+                log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
                 ;;
         esac
+    else
+        # Only log if not already logged by install_dependencies
+        if [ -z "$(read_install_log CHAFA_INSTALLED_BY_SCRIPT)" ]; then
+            log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
+        fi
     fi
 }
 
@@ -143,6 +160,10 @@ main() {
     echo "Distribution: $DISTRO"
     echo "Architecture: $ARCH"
     echo
+
+    # Initialize install log
+    init_install_log
+    log_install "PLATFORM" "linux"
 
     # Always ensure chafa is installed
     ensure_dependencies
@@ -157,10 +178,14 @@ main() {
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
                 echo "Skipping Ghostty installation."
+                log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
+                log_install "GHOSTTY_INSTALL_METHOD" "pre-existing"
                 return 0
             fi
         else
             echo "Non-interactive mode: Skipping Ghostty installation."
+            log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
+            log_install "GHOSTTY_INSTALL_METHOD" "pre-existing"
             return 0
         fi
     fi

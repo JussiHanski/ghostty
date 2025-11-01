@@ -7,6 +7,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/scripts/detect-platform.sh"
+source "${SCRIPT_DIR}/scripts/install-log.sh"
 
 check_homebrew() {
     if ! command -v brew &> /dev/null; then
@@ -15,6 +16,7 @@ check_homebrew() {
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             install_homebrew
+            log_install "HOMEBREW_INSTALLED_BY_SCRIPT" "true"
         else
             echo "Homebrew is required for this installation method."
             echo "Visit https://brew.sh for manual installation."
@@ -22,6 +24,7 @@ check_homebrew() {
         fi
     else
         echo "Homebrew is already installed."
+        log_install "HOMEBREW_INSTALLED_BY_SCRIPT" "false"
     fi
 }
 
@@ -51,14 +54,22 @@ install_ghostty_homebrew() {
     if brew list ghostty &> /dev/null; then
         echo "Ghostty is already installed. Upgrading..."
         brew upgrade ghostty
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
     else
         brew install ghostty
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
     fi
+
+    log_install "GHOSTTY_INSTALL_METHOD" "homebrew"
+    log_install "GHOSTTY_BINARY_PATH" "$(which ghostty 2>/dev/null || echo '/Applications/Ghostty.app')"
 
     # Install chafa for welcome image display
     if ! command -v chafa &> /dev/null; then
         echo "Installing chafa for terminal graphics..."
         brew install chafa
+        log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
+    else
+        log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
     fi
 
     echo "Ghostty installed via Homebrew!"
@@ -67,9 +78,21 @@ install_ghostty_homebrew() {
 install_from_source() {
     echo "Installing Ghostty from source..."
 
+    # Track chafa installation
+    local chafa_was_installed=false
+    if ! command -v chafa &> /dev/null; then
+        chafa_was_installed=true
+    fi
+
     # Install dependencies
     echo "Installing build dependencies..."
     brew install git zig pandoc chafa
+
+    if [ "$chafa_was_installed" = true ]; then
+        log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
+    else
+        log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
+    fi
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
 
@@ -78,11 +101,13 @@ install_from_source() {
         echo "Ghostty source found. Updating..."
         cd "$BUILD_DIR"
         git pull
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
     else
         echo "Cloning Ghostty repository..."
         mkdir -p "${HOME}/.local/src"
         git clone https://github.com/ghostty-org/ghostty.git "$BUILD_DIR"
         cd "$BUILD_DIR"
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
     fi
 
     # Build
@@ -96,6 +121,9 @@ install_from_source() {
     fi
     cp -r "zig-out/bin/Ghostty.app" /Applications/
 
+    log_install "GHOSTTY_INSTALL_METHOD" "source"
+    log_install "GHOSTTY_BINARY_PATH" "/Applications/Ghostty.app"
+
     echo "Ghostty installed successfully!"
 }
 
@@ -105,9 +133,15 @@ ensure_dependencies() {
         echo "Installing chafa for terminal graphics..."
         if command -v brew &> /dev/null; then
             brew install chafa
+            log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
         else
             echo "Warning: Homebrew not found. Cannot install chafa."
             echo "Install it manually: brew install chafa"
+        fi
+    else
+        # Only log if not already logged by install functions
+        if [ -z "$(read_install_log CHAFA_INSTALLED_BY_SCRIPT)" ]; then
+            log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
         fi
     fi
 }
@@ -118,6 +152,10 @@ main() {
     echo "OS: $OS"
     echo "Architecture: $ARCH"
     echo
+
+    # Initialize install log
+    init_install_log
+    log_install "PLATFORM" "macos"
 
     # Always ensure dependencies are installed
     check_homebrew
@@ -136,10 +174,14 @@ main() {
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
                 echo "Skipping Ghostty installation."
+                log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
+                log_install "GHOSTTY_INSTALL_METHOD" "pre-existing"
                 return 0
             fi
         else
             echo "Non-interactive mode: Skipping Ghostty installation."
+            log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
+            log_install "GHOSTTY_INSTALL_METHOD" "pre-existing"
             return 0
         fi
     fi

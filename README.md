@@ -216,36 +216,44 @@ git pull
 
 ## Uninstalling
 
-### Remove Configuration Only
+### Complete Automated Uninstall (Recommended)
+
+The bootstrap script tracks everything it installs and can remove it all automatically:
 
 ```bash
 ~/.ghostty-config/bootstrap.sh --uninstall
 ```
 
-This removes the configuration but keeps the Ghostty binary installed.
+This will:
+- Show you what was installed by the script (based on install log)
+- Remove only components that were installed by the script
+- Clean up shell profile modifications
+- Create a backup of your configuration before removal
+- Optionally remove Homebrew if it was installed by the script
 
-### Complete Removal
+**What gets removed:**
+- Ghostty (if installed by script)
+- Chafa (if installed by script)
+- Zig compiler (Linux, if installed by script)
+- Homebrew (macOS, with confirmation, if installed by script)
+- Configuration files
+- Shell profile modifications
+- Welcome script
 
-**Linux:**
-```bash
-rm -rf ~/.config/ghostty
-rm ~/.local/bin/ghostty
-rm ~/.local/share/applications/ghostty.desktop
-rm -rf ~/.local/src/ghostty
-```
+**What stays:**
+- Pre-existing installations of Ghostty, chafa, or other tools
+- Unrelated Homebrew packages (on macOS)
+- Other modifications to your system
 
-**macOS (Homebrew):**
-```bash
-brew uninstall ghostty
-rm -rf ~/.config/ghostty
-```
+### Install Log
 
-**macOS (Source build):**
-```bash
-rm -rf /Applications/Ghostty.app
-rm -rf ~/.config/ghostty
-rm -rf ~/.local/src/ghostty
-```
+The installer creates a log at `~/.config/ghostty/.install_log` that tracks:
+- What components were installed vs. already existing
+- Installation methods used
+- Paths to installed binaries
+- Shell profile modifications
+
+This ensures the uninstaller only removes what it installed, keeping your system clean.
 
 ## Troubleshooting
 
