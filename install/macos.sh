@@ -75,6 +75,15 @@ install_ghostty_homebrew() {
         log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
     fi
 
+    # Install lazygit
+    if ! command -v lazygit &> /dev/null; then
+        echo "Installing lazygit..."
+        brew install lazygit
+        log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+    else
+        log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "false"
+    fi
+
     echo "Ghostty installed via Homebrew!"
 }
 
@@ -89,12 +98,19 @@ install_from_source() {
 
     # Install dependencies
     echo "Installing build dependencies..."
-    brew install git zig pandoc chafa
+    brew install git zig pandoc chafa lazygit
 
     if [ "$chafa_was_installed" = true ]; then
         log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
     else
         log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
+    fi
+
+    # Track lazygit installation
+    if ! command -v lazygit &> /dev/null; then
+        log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+    else
+        log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "false"
     fi
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
