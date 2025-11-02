@@ -198,7 +198,7 @@ install_ghostty() {
     echo "Ghostty installed successfully!"
 }
 
-ensure_dependencies() {
+ensure_user_dependencies() {
     # Always ensure chafa is installed (needed for welcome image)
     if ! command -v chafa &> /dev/null; then
         echo "Installing chafa for terminal graphics..."
@@ -224,6 +224,34 @@ ensure_dependencies() {
     else
         if [ -z "$(read_install_log CHAFA_INSTALLED_BY_SCRIPT)" ]; then
             log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
+        fi
+    fi
+
+    # Always ensure lazygit is installed
+    if ! command -v lazygit &> /dev/null; then
+        echo "Installing lazygit..."
+        case "$DISTRO" in
+            ubuntu|debian|pop)
+                sudo apt-get install -y lazygit
+                log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+                ;;
+            fedora)
+                sudo dnf install -y lazygit
+                log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+                ;;
+            arch|manjaro)
+                sudo pacman -S --needed --noconfirm lazygit
+                log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+                ;;
+            *)
+                echo "Warning: Unknown distribution. Cannot auto-install lazygit."
+                echo "Please install it manually."
+                log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "false"
+                ;;
+        esac
+    else
+        if [ -z "$(read_install_log LAZYGIT_INSTALLED_BY_SCRIPT)" ]; then
+            log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "false"
         fi
     fi
 }
@@ -267,8 +295,8 @@ main() {
     # Check WSL requirements first
     check_wsl_requirements
 
-    # Always ensure chafa is installed
-    ensure_dependencies
+    # Always ensure user dependencies are installed (chafa, lazygit, etc.)
+    ensure_user_dependencies
 
     # Check if Ghostty is already installed
     if command -v ghostty &> /dev/null; then
