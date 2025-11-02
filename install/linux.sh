@@ -157,7 +157,12 @@ ensure_user_dependencies() {
         echo "Installing lazygit..."
         case "$DISTRO" in
             ubuntu|debian|pop)
-                sudo apt-get install -y lazygit
+                # lazygit requires a PPA on Ubuntu/Debian
+                LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+                curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+                tar xf lazygit.tar.gz lazygit
+                sudo install lazygit /usr/local/bin
+                rm lazygit lazygit.tar.gz
                 log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
                 ;;
             fedora)
@@ -170,7 +175,7 @@ ensure_user_dependencies() {
                 ;;
             *)
                 echo "Warning: Unknown distribution. Cannot auto-install lazygit."
-                echo "Please install it manually."
+                echo "Please install it manually from: https://github.com/jesseduffield/lazygit"
                 log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "false"
                 ;;
         esac
