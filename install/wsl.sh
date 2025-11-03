@@ -96,8 +96,7 @@ install_dependencies() {
         ubuntu|debian|pop)
             cleanup_broken_ppas
             sudo apt-get update
-            sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc chafa gettext libxml2-utils
+            sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
@@ -130,30 +129,10 @@ check_zig() {
 }
 
 install_zig() {
-    local ZIG_VERSION="0.13.0"  # Ghostty v1.0.1 requires Zig 0.13.0
-    local ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
-    local INSTALL_DIR="${HOME}/.local/zig"
-
-    echo "Downloading Zig ${ZIG_VERSION}..."
-    mkdir -p "${HOME}/.local"
-    cd "${HOME}/.local"
-
-    # Remove old Zig installation if it exists
-    rm -rf zig
-
-    curl -fsSL "$ZIG_URL" -o zig.tar.xz
-    tar -xf zig.tar.xz
-    rm zig.tar.xz
-    mv "zig-linux-${ARCH}-${ZIG_VERSION}" zig
-
-    # Add to PATH if not already there
-    if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
-        echo "Adding Zig to PATH..."
-        echo 'export PATH="$HOME/.local/zig:$PATH"' >> "${HOME}/.bashrc"
-        export PATH="${INSTALL_DIR}:$PATH"
-    fi
-
+    echo "Installing Zig via snap..."
+    sudo snap install --beta zig --classic
     log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+    log_install "ZIG_INSTALL_METHOD" "snap"
     echo "Zig installed successfully!"
 }
 
@@ -161,57 +140,33 @@ install_ghostty() {
     echo "Installing Ghostty from source..."
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
-    local GHOSTTY_VERSION="v1.1.3"  # Latest stable version for Zig 0.13
+    # Build from main branch
 
     # Clone or update repository
     if [ -d "$BUILD_DIR" ]; then
         echo "Ghostty source found. Updating..."
         cd "$BUILD_DIR"
-        git fetch --tags
-        git checkout "$GHOSTTY_VERSION"
+        git pull
         log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
     else
         echo "Cloning Ghostty repository..."
         mkdir -p "${HOME}/.local/src"
         git clone https://github.com/ghostty-org/ghostty.git "$BUILD_DIR"
         cd "$BUILD_DIR"
-        git checkout "$GHOSTTY_VERSION"
         log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
     fi
 
-    log_install "GHOSTTY_VERSION" "$GHOSTTY_VERSION"
-
-    # Build
-    echo "Building Ghostty... (this may take a few minutes)"
-    # Use -fno-sys=gtk4-layer-shell for Ubuntu compatibility
-    zig build -Doptimize=ReleaseFast -fno-sys=gtk4-layer-shell
-
-    # Install
-    echo "Installing Ghostty..."
-    mkdir -p "${HOME}/.local/bin"
-    cp "zig-out/bin/ghostty" "${HOME}/.local/bin/"
+    # Build and install
+    echo "Building and installing Ghostty... (this may take a few minutes)"
+    sudo zig build -p /usr -Doptimize=ReleaseFast
 
     log_install "GHOSTTY_INSTALL_METHOD" "source"
-    log_install "GHOSTTY_BINARY_PATH" "${HOME}/.local/bin/ghostty"
+    log_install "GHOSTTY_BINARY_PATH" "/usr/bin/ghostty"
 
-    # Install desktop file (for WSLg integration)
-    mkdir -p "${HOME}/.local/share/applications"
-    if [ -f "src/apprt/gtk/ghostty.desktop" ]; then
-        cp "src/apprt/gtk/ghostty.desktop" "${HOME}/.local/share/applications/"
-        sed -i "s|Exec=ghostty|Exec=${HOME}/.local/bin/ghostty|g" \
-            "${HOME}/.local/share/applications/ghostty.desktop"
-
-        # Update desktop database for WSLg
-        if command -v update-desktop-database &> /dev/null; then
-            update-desktop-database "${HOME}/.local/share/applications" 2>/dev/null || true
-        fi
-    fi
-
-    # Add to PATH if not already there
-    if [[ ":$PATH:" != *":${HOME}/.local/bin:"* ]]; then
-        echo "Adding ${HOME}/.local/bin to PATH..."
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${HOME}/.bashrc"
-        export PATH="${HOME}/.local/bin:$PATH"
+    # Desktop file is installed by zig build -p /usr automatically
+    # Update desktop database for WSLg
+    if command -v update-desktop-database &> /dev/null; then
+        sudo update-desktop-database /usr/share/applications 2>/dev/null || true
     fi
 
     echo "Ghostty installed successfully!"
