@@ -57,6 +57,9 @@ install_zig() {
     mkdir -p "${HOME}/.local"
     cd "${HOME}/.local"
 
+    # Remove old Zig installation if it exists
+    rm -rf zig
+
     curl -fsSL "$ZIG_URL" -o zig.tar.xz
     tar -xf zig.tar.xz
     rm zig.tar.xz
