@@ -160,7 +160,8 @@ install_ghostty() {
 
     # Build and install
     echo "Building and installing Ghostty... (this may take a few minutes)"
-    sudo zig build -p /usr -Doptimize=ReleaseFast
+    # Use -fno-sys=gtk4-layer-shell to compile it from source (not in Ubuntu repos)
+    sudo zig build -p /usr -Doptimize=ReleaseFast -fno-sys=gtk4-layer-shell
 
     log_install "GHOSTTY_INSTALL_METHOD" "source"
     log_install "GHOSTTY_BINARY_PATH" "/usr/bin/ghostty"
