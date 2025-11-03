@@ -232,12 +232,13 @@ ensure_user_dependencies() {
         echo "Installing lazygit..."
         case "$DISTRO" in
             ubuntu|debian|pop)
-                # Add lazygit PPA and install
-                sudo add-apt-repository ppa:lazygit-team/release -y
-                sudo apt-get update
-                sudo apt-get install -y lazygit
+                # Install from GitHub releases (PPA doesn't support all Ubuntu versions)
+                LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+                curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+                tar xf lazygit.tar.gz lazygit
+                sudo install lazygit /usr/local/bin
+                rm lazygit lazygit.tar.gz
                 log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
-                log_install "LAZYGIT_PPA_ADDED" "true"
                 ;;
             fedora)
                 sudo dnf install -y lazygit
