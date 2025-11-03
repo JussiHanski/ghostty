@@ -80,20 +80,25 @@ install_ghostty() {
     echo "Installing Ghostty from source..."
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
+    local GHOSTTY_VERSION="v1.2.3"  # Latest stable release compatible with Zig 0.14.0
 
     # Clone or update repository
     if [ -d "$BUILD_DIR" ]; then
         echo "Ghostty source found. Updating..."
         cd "$BUILD_DIR"
-        git pull
+        git fetch --tags
+        git checkout "$GHOSTTY_VERSION"
         log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "false"
     else
         echo "Cloning Ghostty repository..."
         mkdir -p "${HOME}/.local/src"
         git clone https://github.com/ghostty-org/ghostty.git "$BUILD_DIR"
         cd "$BUILD_DIR"
+        git checkout "$GHOSTTY_VERSION"
         log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
     fi
+
+    log_install "GHOSTTY_VERSION" "$GHOSTTY_VERSION"
 
     # Build
     echo "Building Ghostty... (this may take a few minutes)"
