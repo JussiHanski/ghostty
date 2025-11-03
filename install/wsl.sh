@@ -80,11 +80,21 @@ check_wsl_requirements() {
     echo
 }
 
+cleanup_broken_ppas() {
+    # Remove broken lazygit PPA if it exists (doesn't support all Ubuntu versions)
+    if [ -f /etc/apt/sources.list.d/lazygit-team-ubuntu-release-*.list ]; then
+        echo "Removing broken lazygit PPA from previous installation attempt..."
+        sudo add-apt-repository --remove ppa:lazygit-team/release -y 2>/dev/null || true
+        sudo rm -f /etc/apt/sources.list.d/lazygit-team-ubuntu-release-*.list 2>/dev/null || true
+    fi
+}
+
 install_dependencies() {
     echo "Installing build dependencies for WSL ($DISTRO)..."
 
     case "$DISTRO" in
         ubuntu|debian|pop)
+            cleanup_broken_ppas
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
                 libadwaita-1-dev pkg-config pandoc chafa
