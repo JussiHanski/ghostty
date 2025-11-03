@@ -49,7 +49,7 @@ check_zig() {
 }
 
 install_zig() {
-    local ZIG_VERSION="0.13.0"
+    local ZIG_VERSION="0.14.0"
     local ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
     local INSTALL_DIR="${HOME}/.local/zig"
 
