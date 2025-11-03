@@ -98,7 +98,7 @@ install_dependencies() {
             sudo apt-get update
             sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
             # Install blueprint-compiler via snap (Ubuntu repos have old 0.12, need 0.16+)
-            sudo snap install blueprint-compiler
+            sudo snap install blueprint-compiler --classic
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
