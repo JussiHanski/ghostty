@@ -97,7 +97,7 @@ install_dependencies() {
             cleanup_broken_ppas
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc chafa
+                libadwaita-1-dev pkg-config pandoc chafa gettext libxml2-utils
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
@@ -130,7 +130,7 @@ check_zig() {
 }
 
 install_zig() {
-    local ZIG_VERSION="0.14.0"
+    local ZIG_VERSION="0.13.0"  # Ghostty v1.0.1 requires Zig 0.13.0
     local ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
     local INSTALL_DIR="${HOME}/.local/zig"
 
@@ -161,7 +161,7 @@ install_ghostty() {
     echo "Installing Ghostty from source..."
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
-    local GHOSTTY_VERSION="v1.2.3"  # Latest stable release compatible with Zig 0.14.0
+    local GHOSTTY_VERSION="v1.1.3"  # Latest stable version for Zig 0.13
 
     # Clone or update repository
     if [ -d "$BUILD_DIR" ]; then
@@ -183,7 +183,8 @@ install_ghostty() {
 
     # Build
     echo "Building Ghostty... (this may take a few minutes)"
-    zig build -Doptimize=ReleaseFast
+    # Use -fno-sys=gtk4-layer-shell for Ubuntu compatibility
+    zig build -Doptimize=ReleaseFast -fno-sys=gtk4-layer-shell
 
     # Install
     echo "Installing Ghostty..."
