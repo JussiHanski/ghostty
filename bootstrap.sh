@@ -298,12 +298,15 @@ uninstall_config() {
         local ghostty_installed=$(read_install_log "GHOSTTY_INSTALLED_BY_SCRIPT")
         local ghostty_method=$(read_install_log "GHOSTTY_INSTALL_METHOD")
         local chafa_installed=$(read_install_log "CHAFA_INSTALLED_BY_SCRIPT")
+        local lazygit_installed=$(read_install_log "LAZYGIT_INSTALLED_BY_SCRIPT")
+        local lazygit_ppa_added=$(read_install_log "LAZYGIT_PPA_ADDED")
         local homebrew_installed=$(read_install_log "HOMEBREW_INSTALLED_BY_SCRIPT")
         local zig_installed=$(read_install_log "ZIG_INSTALLED_BY_SCRIPT")
 
         echo "  - Platform: ${platform}"
         [ "$ghostty_installed" = "true" ] && echo "  - Ghostty (installed via ${ghostty_method})"
         [ "$chafa_installed" = "true" ] && echo "  - Chafa"
+        [ "$lazygit_installed" = "true" ] && echo "  - Lazygit"
         [ "$homebrew_installed" = "true" ] && echo "  - Homebrew"
         [ "$zig_installed" = "true" ] && echo "  - Zig compiler"
         echo
@@ -336,6 +339,8 @@ uninstall_config() {
         local ghostty_method=$(read_install_log "GHOSTTY_INSTALL_METHOD")
         local ghostty_binary=$(read_install_log "GHOSTTY_BINARY_PATH")
         local chafa_installed=$(read_install_log "CHAFA_INSTALLED_BY_SCRIPT")
+        local lazygit_installed=$(read_install_log "LAZYGIT_INSTALLED_BY_SCRIPT")
+        local lazygit_ppa_added=$(read_install_log "LAZYGIT_PPA_ADDED")
         local homebrew_installed=$(read_install_log "HOMEBREW_INSTALLED_BY_SCRIPT")
         local zig_installed=$(read_install_log "ZIG_INSTALLED_BY_SCRIPT")
         local shell_profile=$(read_install_log "SHELL_PROFILE")
@@ -381,6 +386,37 @@ uninstall_config() {
             fi
 
             log_success "Chafa removal complete"
+        fi
+
+        # Remove lazygit if we installed it
+        if [ "$lazygit_installed" = "true" ]; then
+            log_info "Removing lazygit..."
+
+            if [ "$platform" = "macos" ]; then
+                if command -v brew &> /dev/null; then
+                    brew uninstall lazygit 2>/dev/null || true
+                fi
+            else
+                # Linux
+                if [ "$lazygit_ppa_added" = "true" ]; then
+                    # Remove via apt and PPA
+                    log_info "Removing lazygit and PPA..."
+                    sudo apt-get remove -y lazygit 2>/dev/null || true
+                    sudo add-apt-repository --remove ppa:lazygit-team/release -y 2>/dev/null || true
+                else
+                    # Installed via package manager (Fedora/Arch) or manual binary
+                    log_warning "Lazygit was installed. You may want to remove it manually:"
+                    log_info "  Ubuntu/Debian: sudo apt-get remove lazygit (or remove /usr/local/bin/lazygit if installed manually)"
+                    log_info "  Fedora: sudo dnf remove lazygit"
+                    log_info "  Arch: sudo pacman -R lazygit"
+                    # Try to remove manual binary install
+                    if [ -f "/usr/local/bin/lazygit" ]; then
+                        sudo rm -f /usr/local/bin/lazygit 2>/dev/null || true
+                    fi
+                fi
+            fi
+
+            log_success "Lazygit removal complete"
         fi
 
         # Remove Zig if we installed it (Linux only)

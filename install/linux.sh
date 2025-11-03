@@ -16,7 +16,7 @@ install_dependencies() {
         ubuntu|debian|pop)
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc chafa lazygit
+                libadwaita-1-dev pkg-config pandoc chafa
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
@@ -28,7 +28,7 @@ install_dependencies() {
             ;;
         *)
             echo "Warning: Unknown distribution. You may need to install dependencies manually."
-            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, chafa, lazygit"
+            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, chafa"
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -157,13 +157,12 @@ ensure_user_dependencies() {
         echo "Installing lazygit..."
         case "$DISTRO" in
             ubuntu|debian|pop)
-                # lazygit requires a PPA on Ubuntu/Debian
-                LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-                curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-                tar xf lazygit.tar.gz lazygit
-                sudo install lazygit /usr/local/bin
-                rm lazygit lazygit.tar.gz
+                # Add lazygit PPA and install
+                sudo add-apt-repository ppa:lazygit-team/release -y
+                sudo apt-get update
+                sudo apt-get install -y lazygit
                 log_install "LAZYGIT_INSTALLED_BY_SCRIPT" "true"
+                log_install "LAZYGIT_PPA_ADDED" "true"
                 ;;
             fedora)
                 sudo dnf install -y lazygit
