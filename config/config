@@ -9,7 +9,7 @@ font-thicken = true
 # Window Configuration
 window-padding-x = 10
 window-padding-y = 10
-window-decoration = false
+window-decoration = true
 window-theme = auto
 background-opacity = 0.95
 background-blur-radius = 20
