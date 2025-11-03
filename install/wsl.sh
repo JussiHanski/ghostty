@@ -96,7 +96,7 @@ install_dependencies() {
         ubuntu|debian|pop)
             cleanup_broken_ppas
             sudo apt-get update
-            sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+            sudo apt-get install -y libgtk-4-dev libadwaita-1-dev blueprint-compiler
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
