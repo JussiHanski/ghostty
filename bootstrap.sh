@@ -196,6 +196,16 @@ deploy_config() {
         mkdir -p "$CONFIG_DIR/themes"
         cp -r "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
 
+        # Create symlinks without .conf extension for compatibility
+        # (some Ghostty versions expect extension, some don't)
+        cd "$CONFIG_DIR/themes"
+        for theme in *.conf; do
+            if [ -f "$theme" ]; then
+                basename="${theme%.conf}"
+                ln -sf "$theme" "$basename" 2>/dev/null || true
+            fi
+        done
+
         # Copy welcome image
         if [ -f "$INSTALL_DIR/config/wizard.png" ]; then
             cp "$INSTALL_DIR/config/wizard.png" "$CONFIG_DIR/"
