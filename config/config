@@ -35,8 +35,8 @@ config-file = keybindings.conf
 
 # Default window size (can be resized with Windows keyboard shortcuts)
 # Columns (characters wide) x Rows (lines tall)
-window-width = 140
-window-height = 40
+window-width = 200
+window-height = 80
 
 # Miscellaneous
 quit-after-last-window-closed = true
