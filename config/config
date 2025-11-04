@@ -34,8 +34,9 @@ clipboard-write = allow
 config-file = keybindings.conf
 
 # Default window size (can be resized with Windows keyboard shortcuts)
-window-width = 140   # columns (characters wide)
-window-height = 40   # rows (lines tall)
+# Columns (characters wide) x Rows (lines tall)
+window-width = 140
+window-height = 40
 
 # Miscellaneous
 quit-after-last-window-closed = true
