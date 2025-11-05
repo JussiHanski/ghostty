@@ -192,14 +192,9 @@ deploy_config() {
         cp "$INSTALL_DIR/config/config" "$CONFIG_DIR/"
         cp "$INSTALL_DIR/config/keybindings.conf" "$CONFIG_DIR/"
 
-        # Copy themes
+        # Copy themes (both .conf and non-.conf versions for cross-platform compatibility)
         mkdir -p "$CONFIG_DIR/themes"
-        cp -r "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
-
-        # Copy welcome image
-        if [ -f "$INSTALL_DIR/config/wizard.png" ]; then
-            cp "$INSTALL_DIR/config/wizard.png" "$CONFIG_DIR/"
-        fi
+        cp "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
 
         # Copy welcome script
         mkdir -p "$HOME/.local/bin"
@@ -241,7 +236,6 @@ deploy_config() {
         log_info "  - config"
         log_info "  - keybindings.conf"
         log_info "  - themes/"
-        log_info "  - wizard.png"
         log_info "  - show-welcome.sh -> ~/.local/bin/"
         if [ "$PLATFORM" = "macos" ]; then
             log_info "  - Add welcome to .zprofile"

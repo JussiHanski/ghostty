@@ -16,19 +16,19 @@ install_dependencies() {
         ubuntu|debian|pop)
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc chafa
+                libadwaita-1-dev pkg-config pandoc
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
-                libadwaita-devel pkgconfig pandoc chafa
+                libadwaita-devel pkgconfig pandoc
             ;;
         arch|manjaro)
             sudo pacman -Sy --needed --noconfirm git base-devel gtk4 \
-                libadwaita pkgconf pandoc chafa
+                libadwaita pkgconf pandoc
             ;;
         *)
             echo "Warning: Unknown distribution. You may need to install dependencies manually."
-            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, chafa"
+            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc"
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -122,37 +122,6 @@ install_ghostty() {
     echo "Ghostty installed successfully!"
 }
 
-ensure_dependencies() {
-    # Always ensure chafa is installed (needed for welcome image)
-    if ! command -v chafa &> /dev/null; then
-        echo "Installing chafa for terminal graphics..."
-        case "$DISTRO" in
-            ubuntu|debian|pop)
-                sudo apt-get install -y chafa
-                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-                ;;
-            fedora)
-                sudo dnf install -y chafa
-                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-                ;;
-            arch|manjaro)
-                sudo pacman -S --needed --noconfirm chafa
-                log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-                ;;
-            *)
-                echo "Warning: Unknown distribution. Cannot auto-install chafa."
-                echo "Please install it manually for the welcome image to display."
-                log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
-                ;;
-        esac
-    else
-        # Only log if not already logged by install_dependencies
-        if [ -z "$(read_install_log CHAFA_INSTALLED_BY_SCRIPT)" ]; then
-            log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
-        fi
-    fi
-}
-
 # Main installation flow
 main() {
     echo "=== Ghostty Linux Installation ==="
@@ -164,9 +133,6 @@ main() {
     # Initialize install log
     init_install_log
     log_install "PLATFORM" "linux"
-
-    # Always ensure chafa is installed
-    ensure_dependencies
 
     # Check if Ghostty is already installed
     if command -v ghostty &> /dev/null; then

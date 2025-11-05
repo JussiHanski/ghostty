@@ -66,36 +66,15 @@ install_ghostty_homebrew() {
     log_install "GHOSTTY_INSTALL_METHOD" "homebrew"
     log_install "GHOSTTY_BINARY_PATH" "$(which ghostty 2>/dev/null || echo '/Applications/Ghostty.app')"
 
-    # Install chafa for welcome image display
-    if ! command -v chafa &> /dev/null; then
-        echo "Installing chafa for terminal graphics..."
-        brew install chafa
-        log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-    else
-        log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
-    fi
-
     echo "Ghostty installed via Homebrew!"
 }
 
 install_from_source() {
     echo "Installing Ghostty from source..."
 
-    # Track chafa installation
-    local chafa_was_installed=false
-    if ! command -v chafa &> /dev/null; then
-        chafa_was_installed=true
-    fi
-
     # Install dependencies
     echo "Installing build dependencies..."
-    brew install git zig pandoc chafa
-
-    if [ "$chafa_was_installed" = true ]; then
-        log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-    else
-        log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
-    fi
+    brew install git zig pandoc
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
 
@@ -130,25 +109,6 @@ install_from_source() {
     echo "Ghostty installed successfully!"
 }
 
-ensure_dependencies() {
-    # Always ensure chafa is installed (needed for welcome image)
-    if ! command -v chafa &> /dev/null; then
-        echo "Installing chafa for terminal graphics..."
-        if command -v brew &> /dev/null; then
-            brew install chafa
-            log_install "CHAFA_INSTALLED_BY_SCRIPT" "true"
-        else
-            echo "Warning: Homebrew not found. Cannot install chafa."
-            echo "Install it manually: brew install chafa"
-        fi
-    else
-        # Only log if not already logged by install functions
-        if [ -z "$(read_install_log CHAFA_INSTALLED_BY_SCRIPT)" ]; then
-            log_install "CHAFA_INSTALLED_BY_SCRIPT" "false"
-        fi
-    fi
-}
-
 # Main installation flow
 main() {
     echo "=== Ghostty macOS Installation ==="
@@ -164,9 +124,8 @@ main() {
     init_install_log
     log_install "PLATFORM" "macos"
 
-    # Always ensure dependencies are installed
+    # Check Homebrew
     check_homebrew
-    ensure_dependencies
 
     # Check if Ghostty is already installed
     if command -v ghostty &> /dev/null || [ -d "/Applications/Ghostty.app" ]; then
