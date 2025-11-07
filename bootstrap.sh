@@ -196,54 +196,12 @@ deploy_config() {
         mkdir -p "$CONFIG_DIR/themes"
         cp "$INSTALL_DIR/config/themes/"* "$CONFIG_DIR/themes/"
 
-        # Copy welcome script
-        mkdir -p "$HOME/.local/bin"
-        if [ -f "$INSTALL_DIR/scripts/show-welcome.sh" ]; then
-            cp "$INSTALL_DIR/scripts/show-welcome.sh" "$HOME/.local/bin/"
-            chmod +x "$HOME/.local/bin/show-welcome.sh"
-        fi
-
-        # Add welcome script to shell profile (platform-specific)
-        if [ "$PLATFORM" = "macos" ]; then
-            SHELL_PROFILE="$HOME/.zprofile"
-        elif [ "$PLATFORM" = "wsl" ] || [ "$PLATFORM" = "linux" ]; then
-            SHELL_PROFILE="$HOME/.bashrc"
-        else
-            SHELL_PROFILE="$HOME/.bashrc"
-        fi
-
-        # Create shell profile if it doesn't exist
-        touch "$SHELL_PROFILE"
-
-        # Log shell profile (only if function is available)
-        if type log_install &>/dev/null; then
-            log_install "SHELL_PROFILE" "$SHELL_PROFILE"
-        fi
-
-        # Add welcome script if not already present
-        if ! grep -q "show-welcome.sh" "$SHELL_PROFILE"; then
-            echo "" >> "$SHELL_PROFILE"
-            echo "# Ghostty welcome message" >> "$SHELL_PROFILE"
-            echo 'if [ -n "$GHOSTTY_RESOURCES_DIR" ] && [ -f "$HOME/.local/bin/show-welcome.sh" ]; then' >> "$SHELL_PROFILE"
-            echo '    "$HOME/.local/bin/show-welcome.sh"' >> "$SHELL_PROFILE"
-            echo 'fi' >> "$SHELL_PROFILE"
-            log_success "Added welcome message to $(basename $SHELL_PROFILE)"
-        fi
-
         log_success "Configuration deployed to $CONFIG_DIR"
     else
         log_info "Would deploy config to $CONFIG_DIR"
         log_info "  - config"
         log_info "  - keybindings.conf"
         log_info "  - themes/"
-        log_info "  - show-welcome.sh -> ~/.local/bin/"
-        if [ "$PLATFORM" = "macos" ]; then
-            log_info "  - Add welcome to .zprofile"
-        elif [ "$PLATFORM" = "wsl" ]; then
-            log_info "  - Add welcome to .bashrc (WSL)"
-        else
-            log_info "  - Add welcome to .bashrc"
-        fi
     fi
 }
 
