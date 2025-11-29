@@ -9,6 +9,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/scripts/detect-platform.sh"
 source "${SCRIPT_DIR}/scripts/install-log.sh"
 
+version_lt() {
+    [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" ]
+}
+
 install_dependencies() {
     echo "Installing build dependencies for $DISTRO..."
 
@@ -28,22 +32,18 @@ install_dependencies() {
             ;;
         *)
             echo "Warning: Unknown distribution. You may need to install dependencies manually."
-            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc"
+            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, blueprint-compiler (>=0.16)"
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
                 exit 1
             fi
-            ;;
+        ;;
     esac
 }
 
 check_zig() {
     local REQUIRED_ZIG_VERSION="0.15.2"
-
-    version_lt() {
-        [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" ]
-    }
 
     dev_satisfies_required() {
         local CURRENT="$1"
@@ -146,6 +146,55 @@ check_zig() {
     else
         echo "Zig compiler not found. Installing Zig ${REQUIRED_ZIG_VERSION}..."
         install_zig "$REQUIRED_ZIG_VERSION"
+    fi
+}
+
+check_blueprint() {
+    local REQUIRED_BLUEPRINT_VERSION="0.16.0"
+    local CURRENT_BLUEPRINT_VERSION=""
+
+    if command -v blueprint-compiler &> /dev/null; then
+        CURRENT_BLUEPRINT_VERSION="$(blueprint-compiler --version 2>/dev/null | awk '{print $NF}')"
+    fi
+
+    if [ -z "$CURRENT_BLUEPRINT_VERSION" ] || version_lt "$CURRENT_BLUEPRINT_VERSION" "$REQUIRED_BLUEPRINT_VERSION"; then
+        echo "Installing blueprint-compiler (>= ${REQUIRED_BLUEPRINT_VERSION})..."
+        case "$DISTRO" in
+            ubuntu|debian|pop)
+                if ! sudo apt-get install -y blueprint-compiler; then
+                    echo "Error: failed to install blueprint-compiler via apt. Please install version >= ${REQUIRED_BLUEPRINT_VERSION} manually."
+                    exit 1
+                fi
+                ;;
+            fedora)
+                if ! sudo dnf install -y blueprint-compiler; then
+                    echo "Error: failed to install blueprint-compiler via dnf. Please install version >= ${REQUIRED_BLUEPRINT_VERSION} manually."
+                    exit 1
+                fi
+                ;;
+            arch|manjaro)
+                if ! sudo pacman -Sy --needed --noconfirm blueprint-compiler; then
+                    echo "Error: failed to install blueprint-compiler via pacman. Please install version >= ${REQUIRED_BLUEPRINT_VERSION} manually."
+                    exit 1
+                fi
+                ;;
+            *)
+                echo "Error: blueprint-compiler >= ${REQUIRED_BLUEPRINT_VERSION} is required. Please install it manually and re-run the installer."
+                exit 1
+                ;;
+        esac
+
+        if command -v blueprint-compiler &> /dev/null; then
+            CURRENT_BLUEPRINT_VERSION="$(blueprint-compiler --version 2>/dev/null | awk '{print $NF}')"
+        fi
+    fi
+
+    if [ -z "$CURRENT_BLUEPRINT_VERSION" ] || version_lt "$CURRENT_BLUEPRINT_VERSION" "$REQUIRED_BLUEPRINT_VERSION"; then
+        echo "Error: blueprint-compiler >= ${REQUIRED_BLUEPRINT_VERSION} is required but version ${CURRENT_BLUEPRINT_VERSION:-unknown} was found."
+        echo "Please install a newer version (see https://ghostty.org/docs/install/build) and try again."
+        exit 1
+    else
+        echo "blueprint-compiler is available: ${CURRENT_BLUEPRINT_VERSION}"
     fi
 }
 
@@ -275,6 +324,7 @@ main() {
     fi
 
     install_dependencies
+    check_blueprint
     check_zig
     install_ghostty
 

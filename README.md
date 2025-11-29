@@ -139,6 +139,7 @@ Changes take effect immediately - just open a new Ghostty window/tab.
 - Build tools (gcc, make)
 - GTK4, libadwaita
 - Zig compiler
+- blueprint-compiler (>=0.16)
 - Pandoc
 - chafa (for welcome image)
 
