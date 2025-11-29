@@ -39,17 +39,31 @@ install_dependencies() {
 }
 
 check_zig() {
-    if ! command -v zig &> /dev/null; then
-        echo "Zig compiler not found. Installing Zig..."
-        install_zig
+    local REQUIRED_ZIG_VERSION="0.15.2"
+
+    version_lt() {
+        [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n' "$1\n$2" | sort -V | head -n1)" ]
+    }
+
+    if command -v zig &> /dev/null; then
+        local CURRENT_ZIG_VERSION
+        CURRENT_ZIG_VERSION="$(zig version 2>/dev/null || true)"
+
+        if version_lt "$CURRENT_ZIG_VERSION" "$REQUIRED_ZIG_VERSION"; then
+            echo "Found Zig ${CURRENT_ZIG_VERSION:-unknown}, but >= ${REQUIRED_ZIG_VERSION} is required. Installing correct version..."
+            install_zig "$REQUIRED_ZIG_VERSION"
+        else
+            echo "Zig is already installed: ${CURRENT_ZIG_VERSION}"
+            log_install "ZIG_INSTALLED_BY_SCRIPT" "false"
+        fi
     else
-        echo "Zig is already installed: $(zig version)"
-        log_install "ZIG_INSTALLED_BY_SCRIPT" "false"
+        echo "Zig compiler not found. Installing Zig ${REQUIRED_ZIG_VERSION}..."
+        install_zig "$REQUIRED_ZIG_VERSION"
     fi
 }
 
 install_zig() {
-    local ZIG_VERSION="0.13.0"
+    local ZIG_VERSION="${1:-0.15.2}"
     local ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
     local INSTALL_DIR="${HOME}/.local/zig"
 
