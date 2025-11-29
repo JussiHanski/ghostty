@@ -85,16 +85,25 @@ check_zig() {
                 sudo snap install zig --classic --"$ch" || true
             fi
 
-            if command -v zig &> /dev/null; then
-                local SNAP_ZIG_VERSION
+            local SNAP_BIN="/snap/bin/zig"
+            local SNAP_ZIG_VERSION=""
+            if [ -x "$SNAP_BIN" ]; then
+                SNAP_ZIG_VERSION="$("$SNAP_BIN" version 2>/dev/null || true)"
+            fi
+            if [ -z "$SNAP_ZIG_VERSION" ] && command -v zig &> /dev/null; then
                 SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
-                if ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; then
-                    echo "Zig ${SNAP_ZIG_VERSION} installed via snap (${ch})."
-                    log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
-                    return 0
-                else
-                    echo "Snap Zig version ${SNAP_ZIG_VERSION} is below required ${REQUIRED}, trying next channel..."
+            fi
+
+            if [ -n "$SNAP_ZIG_VERSION" ] && { ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; }; then
+                echo "Zig ${SNAP_ZIG_VERSION} installed via snap (${ch})."
+                # Prefer snap zig on PATH for subsequent commands
+                if [[ ":$PATH:" != *":/snap/bin:"* ]]; then
+                    export PATH="/snap/bin:$PATH"
                 fi
+                log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+                return 0
+            else
+                echo "Snap Zig version ${SNAP_ZIG_VERSION:-unknown} is below required ${REQUIRED}, trying next channel..."
             fi
         done
 
@@ -103,14 +112,21 @@ check_zig() {
         sudo snap remove zig || true
         sudo snap install zig --classic --edge || true
 
-        if command -v zig &> /dev/null; then
-            local SNAP_ZIG_VERSION
+        local SNAP_BIN="/snap/bin/zig"
+        local SNAP_ZIG_VERSION=""
+        if [ -x "$SNAP_BIN" ]; then
+            SNAP_ZIG_VERSION="$("$SNAP_BIN" version 2>/dev/null || true)"
+        fi
+        if [ -z "$SNAP_ZIG_VERSION" ] && command -v zig &> /dev/null; then
             SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
-            if ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; then
-                echo "Zig ${SNAP_ZIG_VERSION} installed via snap (edge)."
-                log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
-                return 0
+        fi
+        if [ -n "$SNAP_ZIG_VERSION" ] && { ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; }; then
+            echo "Zig ${SNAP_ZIG_VERSION} installed via snap (edge)."
+            if [[ ":$PATH:" != *":/snap/bin:"* ]]; then
+                export PATH="/snap/bin:$PATH"
             fi
+            log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+            return 0
         fi
 
         return 1
