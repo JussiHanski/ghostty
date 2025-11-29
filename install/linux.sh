@@ -77,8 +77,10 @@ check_zig() {
 
         for ch in "${channels[@]}"; do
             echo "Attempting to install Zig via snap (${ch} channel)..."
-            if [ "$ch" = "stable" ]; then
-                sudo snap install zig --classic || true
+
+            # If already installed, try refreshing to the channel; otherwise install fresh.
+            if snap list zig &> /dev/null; then
+                sudo snap refresh zig --classic --"$ch" || true
             else
                 sudo snap install zig --classic --"$ch" || true
             fi
@@ -95,6 +97,21 @@ check_zig() {
                 fi
             fi
         done
+
+        # Last resort: remove and reinstall on edge
+        echo "Attempting fresh install of Zig via snap (edge channel)..."
+        sudo snap remove zig || true
+        sudo snap install zig --classic --edge || true
+
+        if command -v zig &> /dev/null; then
+            local SNAP_ZIG_VERSION
+            SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
+            if ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; then
+                echo "Zig ${SNAP_ZIG_VERSION} installed via snap (edge)."
+                log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+                return 0
+            fi
+        fi
 
         return 1
     }
