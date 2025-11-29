@@ -45,11 +45,33 @@ check_zig() {
         [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" ]
     }
 
+    dev_satisfies_required() {
+        local CURRENT="$1"
+        local REQUIRED="$2"
+
+        # Accept dev builds that are at least the required major.minor, regardless of patch
+        if [[ "$CURRENT" =~ ^([0-9]+)\.([0-9]+)\..*-dev ]]; then
+            local CUR_MAJOR="${BASH_REMATCH[1]}"
+            local CUR_MINOR="${BASH_REMATCH[2]}"
+
+            if [[ "$REQUIRED" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+                local REQ_MAJOR="${BASH_REMATCH[1]}"
+                local REQ_MINOR="${BASH_REMATCH[2]}"
+
+                if [[ "$CUR_MAJOR" -gt "$REQ_MAJOR" || ( "$CUR_MAJOR" -eq "$REQ_MAJOR" && "$CUR_MINOR" -ge "$REQ_MINOR" ) ]]; then
+                    return 0
+                fi
+            fi
+        fi
+
+        return 1
+    }
+
     if command -v zig &> /dev/null; then
         local CURRENT_ZIG_VERSION
         CURRENT_ZIG_VERSION="$(zig version 2>/dev/null || true)"
 
-        if version_lt "$CURRENT_ZIG_VERSION" "$REQUIRED_ZIG_VERSION"; then
+        if version_lt "$CURRENT_ZIG_VERSION" "$REQUIRED_ZIG_VERSION" && ! dev_satisfies_required "$CURRENT_ZIG_VERSION" "$REQUIRED_ZIG_VERSION"; then
             echo "Found Zig ${CURRENT_ZIG_VERSION:-unknown}, but >= ${REQUIRED_ZIG_VERSION} is required. Installing correct version..."
             install_zig "$REQUIRED_ZIG_VERSION"
         else
@@ -62,19 +84,25 @@ check_zig() {
     fi
 }
 
-install_zig() {
-    local ZIG_VERSION="${1:-0.15.2}"
-    local ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
+download_and_install_zig() {
+    local URL="$1"
+    local VERSION_LABEL="$2"
     local INSTALL_DIR="${HOME}/.local/zig"
 
-    echo "Downloading Zig ${ZIG_VERSION}..."
+    echo "Downloading Zig ${VERSION_LABEL}..."
     mkdir -p "${HOME}/.local"
     cd "${HOME}/.local"
 
-    curl -fsSL "$ZIG_URL" -o zig.tar.xz
+    curl -fsSL "$URL" -o zig.tar.xz
     tar -xf zig.tar.xz
     rm zig.tar.xz
-    mv "zig-linux-${ARCH}-${ZIG_VERSION}" zig
+
+    # Extract folder name from tarball (matches trailing .tar.xz basename minus extension)
+    local FOLDER_NAME
+    FOLDER_NAME="$(basename "$URL" .tar.xz)"
+
+    rm -rf zig
+    mv "$FOLDER_NAME" zig
 
     # Add to PATH if not already there
     if [[ ":$PATH:" != *":${INSTALL_DIR}:"* ]]; then
@@ -85,6 +113,77 @@ install_zig() {
 
     log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
     echo "Zig installed successfully!"
+}
+
+install_zig() {
+    local ZIG_VERSION="${1:-0.15.2}"
+    local RELEASE_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
+
+    # Prefer snap if available, since it often ships newer builds
+    if command -v snap &> /dev/null; then
+        echo "Attempting to install Zig via snap..."
+        sudo snap install zig --classic || true
+
+        if command -v zig &> /dev/null; then
+            local SNAP_ZIG_VERSION
+            SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
+            if ! version_lt "$SNAP_ZIG_VERSION" "$ZIG_VERSION" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$ZIG_VERSION"; then
+                echo "Zig ${SNAP_ZIG_VERSION} installed via snap."
+                log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+                return
+            else
+                echo "Snap Zig version ${SNAP_ZIG_VERSION} is below required ${ZIG_VERSION}, continuing with manual download..."
+            fi
+        fi
+    fi
+
+    # Try official release first
+    if curl --head --silent --fail "$RELEASE_URL" > /dev/null; then
+        download_and_install_zig "$RELEASE_URL" "$ZIG_VERSION"
+        return
+    fi
+
+    echo "Zig ${ZIG_VERSION} release not found. Falling back to latest master build..."
+
+    # Fetch latest master build from ziglang.org/builds/index.json
+    local MASTER_INFO
+    MASTER_INFO="$(
+        ARCH="$ARCH" python3 - <<'PY'
+import json, os, urllib.request
+
+arch_map = {
+    "x86_64": "x86_64-linux",
+    "aarch64": "aarch64-linux",
+}
+
+arch = arch_map.get(os.environ.get("ARCH", ""), f"{os.environ.get('ARCH', 'x86_64')}-linux")
+
+try:
+    with urllib.request.urlopen("https://ziglang.org/builds/index.json") as resp:
+        data = json.load(resp)
+
+    master = data.get("master", {})
+    build = master.get(arch, {})
+    tarball = build.get("tarball")
+    version = master.get("version")
+
+    if tarball and version:
+        print(f"{tarball} {version}")
+except Exception:
+    pass
+PY
+    )"
+
+    local MASTER_TARBALL
+    local MASTER_VERSION
+    read -r MASTER_TARBALL MASTER_VERSION <<< "$MASTER_INFO"
+
+    if [ -z "$MASTER_TARBALL" ] || [ -z "$MASTER_VERSION" ]; then
+        echo "Error: Could not determine latest Zig master build URL."
+        exit 1
+    fi
+
+    download_and_install_zig "$MASTER_TARBALL" "$MASTER_VERSION"
 }
 
 install_ghostty() {
