@@ -20,19 +20,22 @@ install_dependencies() {
         ubuntu|debian|pop)
             sudo apt-get update
             sudo apt-get install -y git build-essential libgtk-4-dev \
-                libadwaita-1-dev pkg-config pandoc
+                libadwaita-1-dev pkg-config pandoc gettext libxml2-utils \
+                libgtk4-layer-shell-dev
             ;;
         fedora)
             sudo dnf install -y git gcc gcc-c++ gtk4-devel \
-                libadwaita-devel pkgconfig pandoc
+                libadwaita-devel pkgconfig pandoc gettext libxml2 \
+                gtk4-layer-shell-devel
             ;;
         arch|manjaro)
             sudo pacman -Sy --needed --noconfirm git base-devel gtk4 \
-                libadwaita pkgconf pandoc
+                libadwaita pkgconf pandoc gettext libxml2 \
+                gtk4-layer-shell
             ;;
         *)
             echo "Warning: Unknown distribution. You may need to install dependencies manually."
-            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, blueprint-compiler (>=0.16)"
+            echo "Required: git, build tools, gtk4, libadwaita, pkg-config, pandoc, gettext, libxml2 (xmllint), gtk4-layer-shell, blueprint-compiler (>=0.16)"
             read -p "Continue anyway? (y/N) " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then

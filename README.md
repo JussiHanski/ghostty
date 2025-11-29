@@ -137,9 +137,10 @@ Changes take effect immediately - just open a new Ghostty window/tab.
 
 **Dependencies installed:**
 - Build tools (gcc, make)
-- GTK4, libadwaita
+- GTK4, libadwaita, GTK4 layer shell
 - Zig compiler
 - blueprint-compiler (>=0.16)
+- gettext/msgfmt, libxml2/xmllint
 - Pandoc
 - chafa (for welcome image)
 
