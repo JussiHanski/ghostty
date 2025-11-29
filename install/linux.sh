@@ -42,7 +42,7 @@ check_zig() {
     local REQUIRED_ZIG_VERSION="0.15.2"
 
     version_lt() {
-        [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n' "$1\n$2" | sort -V | head -n1)" ]
+        [ "$1" != "$2" ] && [ "$1" = "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" ]
     }
 
     if command -v zig &> /dev/null; then
