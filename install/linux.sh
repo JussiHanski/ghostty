@@ -149,64 +149,54 @@ download_and_install_zig() {
 
 install_zig() {
     local ZIG_VERSION="${1:-0.15.2}"
-    local RELEASE_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
-
-    # Prefer snap if available, since it often ships newer builds
+    # Only use snap as a source. If it fails, instruct the user to install manually.
     if try_snap_install_zig "$ZIG_VERSION"; then
         return
     fi
 
-    # Try official release first
-    if curl --head --silent --fail "$RELEASE_URL" > /dev/null; then
-        download_and_install_zig "$RELEASE_URL" "$ZIG_VERSION"
-        return
-    fi
-
-    echo "Zig ${ZIG_VERSION} release not found. Falling back to latest master build..."
-
-    # Fetch latest master build from ziglang.org/builds/index.json
-    local MASTER_INFO
-    MASTER_INFO="$(
-        ARCH="$ARCH" python3 - <<'PY'
-import json, os, urllib.request
-
-arch_map = {
-    "x86_64": "x86_64-linux",
-    "aarch64": "aarch64-linux",
+    echo "Error: Unable to install Zig via snap. Please install Zig >= ${ZIG_VERSION} manually and re-run the installer."
+    exit 1
 }
 
-arch = arch_map.get(os.environ.get("ARCH", ""), f"{os.environ.get('ARCH', 'x86_64')}-linux")
-
-try:
-    with urllib.request.urlopen("https://ziglang.org/builds/index.json") as resp:
-        data = json.load(resp)
-
-    master = data.get("master", {})
-    build = master.get(arch, {})
-    tarball = build.get("tarball")
-    version = master.get("version")
-
-    if tarball and version:
-        print(f"{tarball} {version}")
-except Exception:
-    pass
-PY
-    )"
-
-    local MASTER_TARBALL
-    local MASTER_VERSION
-    read -r MASTER_TARBALL MASTER_VERSION <<< "$MASTER_INFO"
-
-    if [ -z "$MASTER_TARBALL" ] || [ -z "$MASTER_VERSION" ]; then
-        echo "Error: Could not determine latest Zig master build URL."
-        exit 1
+try_snap_install_ghostty() {
+    if ! command -v snap &> /dev/null; then
+        return 1
     fi
 
-    download_and_install_zig "$MASTER_TARBALL" "$MASTER_VERSION"
+    echo "Attempting to install Ghostty via snap..."
+
+    if snap list ghostty &> /dev/null; then
+        sudo snap refresh ghostty --classic || true
+    else
+        sudo snap install ghostty --classic || true
+    fi
+
+    if command -v ghostty &> /dev/null; then
+        local GHOSTTY_PATH
+        GHOSTTY_PATH="$(command -v ghostty)"
+        local GHOSTTY_VERSION
+        GHOSTTY_VERSION="$(ghostty --version 2>/dev/null || echo 'unknown')"
+        echo "Ghostty installed via snap at ${GHOSTTY_PATH} (version: ${GHOSTTY_VERSION})."
+        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
+        log_install "GHOSTTY_INSTALL_METHOD" "snap"
+        log_install "GHOSTTY_BINARY_PATH" "${GHOSTTY_PATH}"
+        return 0
+    fi
+
+    echo "Snap installation of Ghostty did not succeed."
+    return 1
 }
 
 install_ghostty() {
-    echo "Installing Ghostty from source..."
+    echo "Installing Ghostty..."
+
+    if try_snap_install_ghostty; then
+        return
+    fi
+
+    echo "Snap installation unavailable or failed; building Ghostty from source..."
+
+    check_zig
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
 
@@ -289,7 +279,7 @@ main() {
     fi
 
     install_dependencies
-    check_zig
+    # Ghostty snap is self-contained; only build deps are needed when falling back to source.
     install_ghostty
 
     echo
