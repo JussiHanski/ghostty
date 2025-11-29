@@ -158,45 +158,8 @@ install_zig() {
     exit 1
 }
 
-try_snap_install_ghostty() {
-    if ! command -v snap &> /dev/null; then
-        return 1
-    fi
-
-    echo "Attempting to install Ghostty via snap..."
-
-    if snap list ghostty &> /dev/null; then
-        sudo snap refresh ghostty --classic || true
-    else
-        sudo snap install ghostty --classic || true
-    fi
-
-    if command -v ghostty &> /dev/null; then
-        local GHOSTTY_PATH
-        GHOSTTY_PATH="$(command -v ghostty)"
-        local GHOSTTY_VERSION
-        GHOSTTY_VERSION="$(ghostty --version 2>/dev/null || echo 'unknown')"
-        echo "Ghostty installed via snap at ${GHOSTTY_PATH} (version: ${GHOSTTY_VERSION})."
-        log_install "GHOSTTY_INSTALLED_BY_SCRIPT" "true"
-        log_install "GHOSTTY_INSTALL_METHOD" "snap"
-        log_install "GHOSTTY_BINARY_PATH" "${GHOSTTY_PATH}"
-        return 0
-    fi
-
-    echo "Snap installation of Ghostty did not succeed."
-    return 1
-}
-
 install_ghostty() {
-    echo "Installing Ghostty..."
-
-    if try_snap_install_ghostty; then
-        return
-    fi
-
-    echo "Snap installation unavailable or failed; building Ghostty from source..."
-
-    check_zig
+    echo "Installing Ghostty from source..."
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
 
@@ -279,7 +242,7 @@ main() {
     fi
 
     install_dependencies
-    # Ghostty snap is self-contained; only build deps are needed when falling back to source.
+    check_zig
     install_ghostty
 
     echo
