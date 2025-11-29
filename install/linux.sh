@@ -247,6 +247,8 @@ install_ghostty() {
     echo "Installing Ghostty from source..."
 
     local BUILD_DIR="${HOME}/.local/src/ghostty"
+    local DESKTOP_DEST="${HOME}/.local/share/applications"
+    local DESKTOP_FILE_NAME="com.mitchellh.ghostty.desktop"
 
     # Clone or update repository
     if [ -d "$BUILD_DIR" ]; then
@@ -274,12 +276,18 @@ install_ghostty() {
     log_install "GHOSTTY_INSTALL_METHOD" "source"
     log_install "GHOSTTY_BINARY_PATH" "${HOME}/.local/bin/ghostty"
 
-    # Install desktop file
-    mkdir -p "${HOME}/.local/share/applications"
-    if [ -f "src/apprt/gtk/ghostty.desktop" ]; then
-        cp "src/apprt/gtk/ghostty.desktop" "${HOME}/.local/share/applications/"
-        sed -i "s|Exec=ghostty|Exec=${HOME}/.local/bin/ghostty|g" \
-            "${HOME}/.local/share/applications/ghostty.desktop"
+    # Install desktop file (prefer generated .desktop; fall back to source if present)
+    mkdir -p "$DESKTOP_DEST"
+    if [ -f "zig-out/share/applications/${DESKTOP_FILE_NAME}" ]; then
+        cp "zig-out/share/applications/${DESKTOP_FILE_NAME}" "${DESKTOP_DEST}/${DESKTOP_FILE_NAME}"
+    elif [ -f "src/apprt/gtk/ghostty.desktop" ]; then
+        cp "src/apprt/gtk/ghostty.desktop" "${DESKTOP_DEST}/${DESKTOP_FILE_NAME}"
+    fi
+
+    if [ -f "${DESKTOP_DEST}/${DESKTOP_FILE_NAME}" ]; then
+        # Point Exec/TryExec to the installed binary
+        sed -i "s|^Exec=.*|Exec=${HOME}/.local/bin/ghostty --gtk-single-instance=true|" "${DESKTOP_DEST}/${DESKTOP_FILE_NAME}"
+        sed -i "s|^TryExec=.*|TryExec=${HOME}/.local/bin/ghostty|" "${DESKTOP_DEST}/${DESKTOP_FILE_NAME}"
     fi
 
     # Add to PATH if not already there
