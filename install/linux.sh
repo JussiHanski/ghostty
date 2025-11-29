@@ -67,6 +67,38 @@ check_zig() {
         return 1
     }
 
+    try_snap_install_zig() {
+        local REQUIRED="$1"
+        local channels=("stable" "beta" "edge")
+
+        if ! command -v snap &> /dev/null; then
+            return 1
+        fi
+
+        for ch in "${channels[@]}"; do
+            echo "Attempting to install Zig via snap (${ch} channel)..."
+            if [ "$ch" = "stable" ]; then
+                sudo snap install zig --classic || true
+            else
+                sudo snap install zig --classic --"$ch" || true
+            fi
+
+            if command -v zig &> /dev/null; then
+                local SNAP_ZIG_VERSION
+                SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
+                if ! version_lt "$SNAP_ZIG_VERSION" "$REQUIRED" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$REQUIRED"; then
+                    echo "Zig ${SNAP_ZIG_VERSION} installed via snap (${ch})."
+                    log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
+                    return 0
+                else
+                    echo "Snap Zig version ${SNAP_ZIG_VERSION} is below required ${REQUIRED}, trying next channel..."
+                fi
+            fi
+        done
+
+        return 1
+    }
+
     if command -v zig &> /dev/null; then
         local CURRENT_ZIG_VERSION
         CURRENT_ZIG_VERSION="$(zig version 2>/dev/null || true)"
@@ -120,21 +152,8 @@ install_zig() {
     local RELEASE_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-linux-${ARCH}-${ZIG_VERSION}.tar.xz"
 
     # Prefer snap if available, since it often ships newer builds
-    if command -v snap &> /dev/null; then
-        echo "Attempting to install Zig via snap..."
-        sudo snap install zig --classic || true
-
-        if command -v zig &> /dev/null; then
-            local SNAP_ZIG_VERSION
-            SNAP_ZIG_VERSION="$(zig version 2>/dev/null || true)"
-            if ! version_lt "$SNAP_ZIG_VERSION" "$ZIG_VERSION" || dev_satisfies_required "$SNAP_ZIG_VERSION" "$ZIG_VERSION"; then
-                echo "Zig ${SNAP_ZIG_VERSION} installed via snap."
-                log_install "ZIG_INSTALLED_BY_SCRIPT" "true"
-                return
-            else
-                echo "Snap Zig version ${SNAP_ZIG_VERSION} is below required ${ZIG_VERSION}, continuing with manual download..."
-            fi
-        fi
+    if try_snap_install_zig "$ZIG_VERSION"; then
+        return
     fi
 
     # Try official release first
